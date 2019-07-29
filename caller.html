@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta name="keywords" content="JavaScript, WebRTC" />
+<meta name="description" content="WebRTC codelab" />
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+<title>WebRTC codelab: step 1</title>
+
+<!-- When we finish the codelab we'll move CSS and JavaScript to separate files -->
+
+<!-- CSS will go here -->
+<style>
+</style>
+
+    <script src='js/lib/adapter.js'></script>
+
+</head>
+
+<body>
+
+<!-- HTML will go here -->
+<video id="local-video" width="400" height="300" controls></video>
+<div>
+    <button id="signal-button">Get Signal File</button><br><br>
+    <button id="hangup-button">Hang up</button><br><br>
+    Load signal: <input type="file" id="load-button" accept=".txt"/>
+</div>
+<input id="msgInput" type="text"/><button id="sendMsgBtn">send</button>
+
+</body>
+<!-- JavaScript will go here -->
+<script>
+let hangupButton = document.getElementById("hangup-button");
+hangupButton.onclick =function(){
+    trace("Ending call");
+    sendChannel.close();
+    localPeerConnection.close();
+}
+let msgInput = document.getElementById("msgInput");
+document.getElementById("sendMsgBtn").onclick = function(){
+    sendChannel.send(msgInput.value);
+}
+let localStream, localPeerConnection, remotePeerConnection;
+let sendChannel;
+let RTCSignal = {ICECandidate:[],description:{}};
+let descriptionReady = false, ICECandidateReady = false;
+let calleeSignal;
+
+let localVideo = document.getElementById("local-video");
+let remoteVideo = document.getElementById("remote-video");
+
+let signalButton = document.getElementById("signal-button");
+let loadButton = document.getElementById("load-button");
+
+signalButton.onclick = function(){
+    localPeerConnection.createOffer(gotLocalDescription,handleError);
+    signalButton.disabled=true;
+};
+loadButton.onchange = load;
+
+function trace(text){
+    console.log((performance.now()/1000).toFixed(3)+": "+text);
+}
+
+function load(){
+    let reader = new FileReader();
+    reader.onload = function(e){
+        calleeSignal = JSON.parse(e.target.result);
+        console.log(calleeSignal);
+        localPeerConnection.setRemoteDescription(calleeSignal.description);
+        for(x of calleeSignal.ICECandidate){
+            localPeerConnection.addIceCandidate(new RTCIceCandidate(x));
+        }
+    }
+    reader.readAsText(this.files[0])
+}
+
+function gotStream(stream){
+    trace("Requesting local stream");
+    localVideo.srcObject = stream;
+    localStream = stream;
+    trace("starting signal");
+    if(localStream.getVideoTracks().length > 0)trace('Using video device: '+localStream.getVideoTracks()[0].label);
+    if(localStream.getAudioTracks().length > 0)trace('Using audio device: '+localStream.getAudioTracks()[0].label);
+
+    localPeerConnection = new RTCPeerConnection({
+        'iceServers': [
+            {'urls': 'stun:stun.l.google.com:19302'}
+        ]
+    });
+    trace("Created local peer connection object");
+    sendChannel = localPeerConnection.createDataChannel('sendDataChannel',null);
+    localPeerConnection.onicecandidate = gotLocalIceCandidate;
+
+    //remotePeerConnection = new RTCPeerConnection();
+    // trace("Created remote peer connection object");
+    // remotePeerConnection.onicecandidate = gotRemoteIceCandidate;
+    // remotePeerConnection.onaddstream = gotRemoteStream;
+
+    localPeerConnection.addStream(localStream);
+    trace("Added localStream to localPeerConnection");
+}
+
+function start(){
+    trace("Requesting local stream");
+    getUserMedia({audio:true, video:true},gotStream,function(error){
+        trace("getUserMedia error: ",error);
+    });
+}
+
+function gotLocalDescription(description){
+    RTCSignal.description = description;
+    descriptionReady = true;
+    createSettingFileDownloadLink();
+    localPeerConnection.setLocalDescription(description);
+    //trace("Offer from localPeerConnection: \n"+description.sdp)
+    // remotePeerConnection.setRemoteDescription(description);
+    // remotePeerConnection.createAnswer(gotRemoteDescription,handleError);
+}
+
+// function gotRemoteDescription(description){
+//     remotePeerConnection.setLocalDescription(description);
+//     trace("Answer from remotePeerConnection: \n"+description.sdp);
+//     localPeerConnection.setRemoteDescription(description);
+// }
+
+// function gotRemoteStream(event){
+//     remoteVideo.srcObject=event.stream;
+//     trace("Received remote stream");
+// }
+let timer;
+function allc(){
+    trace("get all ICE candidate");
+    ICECandidateReady = true;
+    createSettingFileDownloadLink();
+}
+function gotLocalIceCandidate(event){
+    if(event.candidate){
+        RTCSignal.ICECandidate.push(event.candidate);
+        clearTimeout(timer)
+        timer = setTimeout(allc,300);
+        // remotePeerConnection.addIceCandidate(new RTCIceCandidate(JSON.parse(JSON.stringify(event.candidate))));
+        //trace("Local ICE candidate:\n"+event.candidate.candidate);
+    }else{
+        trace("get all ICE candidate");
+        ICECandidateReady = true;
+        createSettingFileDownloadLink();
+    }
+}
+
+// function gotRemoteIceCandidate(event){
+//     if(event.candidate){
+//         localPeerConnection.addIceCandidate(new RTCIceCandidate(event.candidate));
+//         trace("Remote ICE candidate:\n"+event.candidate.candidate);
+//     }
+// }
+
+function createSettingFileDownloadLink(){
+    if(ICECandidateReady && descriptionReady){
+        let link = document.createElement("a");
+        link.innerHTML = "Download signal";
+        let url = URL.createObjectURL(new Blob([JSON.stringify(RTCSignal)]));
+        link.href=url;
+        link.download = "CallerSignal.txt";
+        document.body.appendChild(link);
+        document.body.appendChild(document.createElement("br"));
+    }
+}
+
+function handleError(){};
+start();
+</script>
+
+</html>
