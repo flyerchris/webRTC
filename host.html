@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <button onclick="newConnectionToGuest()">create connection</button>
+        <button onclick="signal(peerConnection[pi])">signal</button>
+        <button onclick="sendDes()">send description to ws</button>
+        <button onclick="sendIce()">send ICE candidates to ws</button>
+    </body>
+
+    <script src='js/lib/adapter.js'></script>
+    <script src='host.js'></script>
+    <script>
+        let ws = new WebSocket("ws://localhost:9090");
+        ws.onopen = function(e){
+            console.log("connect to web socket server");
+            ws.send(JSON.stringify({role: "host", method: "setRole"}));
+        }
+        ws.onmessage = function(e){
+            let obj = JSON.parse(e.data);
+            let msg = obj.msg;
+            if(msg) console.log(`message from ws server: ${obj.msg}`);
+            if(obj.method == "sendDes"){
+                setRemoteDescription(peerConnection[pi],obj.description);
+                console.log("set remote description");
+            }
+            if(obj.method == "sendIce"){
+                addRemoteIceCandidate(peerConnection[pi],obj.ice);
+                console.log("set remote ice");
+            }
+        }
+        getMedia();
+        function sendDes(){
+            ws.send(JSON.stringify({role: "host", method: "sendDes", description: peerConnection[pi].localDescription}));
+        }
+        function sendIce(){
+            ws.send(JSON.stringify({role: "host", method: "sendIce", ice: peerConnection[pi].ice}));
+        }
+    </script>
+</html>

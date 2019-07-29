@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <video id="remote-video" width="400" height="300" controls></video><br>
+        <button onclick="requestSignal()">request signal</button>
+        <button onclick="createAnswer()">create answer</button>
+        <button onclick="sendDes()">send description</button>
+        <button onclick="sendIce()">send ice</button>
+    </body>
+    <script src='js/lib/adapter.js'></script>
+    <script src='./guest.js'></script>
+    <script>
+        let ws = new WebSocket("ws://192.168.1.108:9090");
+        ws.onopen = function(e){
+            console.log("connect to web socket server");
+            ws.send(JSON.stringify({role: "guest", method: "setRole"}));
+        }
+        ws.onmessage = function(e){
+            let obj = JSON.parse(e.data);
+            let msg = obj.msg;
+            if(msg) console.log(`message from ws server: ${obj.msg}`);
+            if(obj.method == "sendDes"){
+                description = obj.description;
+                console.log("receive description");
+                setRemoteDes();
+            }
+            if(obj.method == "sendIce"){
+                ice = obj.ice;
+                console.log(description);
+                console.log(ice);
+                addIce();
+            }
+        }
+        function sendDes(){
+            ws.send(JSON.stringify({role: "guest", method: "sendDes", description: localDes}));
+        }
+        function sendIce(){
+            ws.send(JSON.stringify({role: "guest", method: "sendIce", ice: localIce}));
+        }
+        createConnection();
+    </script>
+</html>
