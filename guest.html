@@ -10,7 +10,7 @@
     <script src='js/lib/adapter.js'></script>
     <script src='./guest.js'></script>
     <script>
-        let ws = new WebSocket("ws://192.168.1.108:9090");
+        let ws = new WebSocket("wss://192.168.1.108:9090");
         ws.onopen = function(e){
             console.log("connect to web socket server");
             ws.send(JSON.stringify({role: "guest", method: "setRole"}));
