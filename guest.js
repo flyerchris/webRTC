@@ -7,10 +7,6 @@ function trace(text){
     console.log((performance.now()/1000).toFixed(3)+": "+text);
 }
 
-function requestSignal(){
-    ws.send(JSON.stringify({role: "guest", method: "requestDes"}));
-}
-
 function setRemoteDes(){
     remotePeerConnection.setRemoteDescription(description);
 }
@@ -36,7 +32,7 @@ function createConnection(){
         ]
     });
     trace("Created remote peer connection object");
-    remotePeerConnection.onicecandidate = gotRemoteIceCandidate;
+    remotePeerConnection.onicecandidate = gotLocalIceCandidate;
     remotePeerConnection.ondatachannel = function(event){
         receiveChannel = event.channel;
         receiveChannel.onmessage = function(e){
@@ -51,7 +47,7 @@ function gotRemoteStream(event){
     trace("Received remote stream");
 }
 
-function gotRemoteIceCandidate(event){
+function gotLocalIceCandidate(event){
     if(event.candidate){
         localIce.push(event.candidate);
     }else{

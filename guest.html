@@ -2,40 +2,37 @@
 <html>
     <body>
         <video id="remote-video" width="400" height="300" controls></video><br>
-        <button onclick="requestSignal()">request signal</button>
         <button onclick="createAnswer()">create answer</button>
-        <button onclick="sendDes()">send description</button>
-        <button onclick="sendIce()">send ice</button>
+        <button onclick="sendSignal()">send description</button>
     </body>
     <script src='js/lib/adapter.js'></script>
     <script src='./guest.js'></script>
     <script>
-        let ws = new WebSocket("ws://localhost:9090");
+        let ws = new WebSocket("wss://l59ktpliwl.execute-api.ap-northeast-1.amazonaws.com/test");
         ws.onopen = function(e){
             console.log("connect to web socket server");
-            ws.send(JSON.stringify({role: "guest", method: "setRole"}));
         }
         ws.onmessage = function(e){
             let obj = JSON.parse(e.data);
             let msg = obj.msg;
             if(msg) console.log(`message from ws server: ${obj.msg}`);
-            if(obj.method == "sendDes"){
-                description = obj.description;
-                console.log("receive description");
-                setRemoteDes();
-            }
-            if(obj.method == "sendIce"){
-                ice = obj.ice;
+            if(obj.action == "sendSignal"){
+                description = obj.signal.description;
+                ice = obj.signal.ice;
                 console.log(description);
                 console.log(ice);
+                setRemoteDes();
                 addIce();
             }
         }
-        function sendDes(){
-            ws.send(JSON.stringify({role: "guest", method: "sendDes", description: localDes}));
-        }
-        function sendIce(){
-            ws.send(JSON.stringify({role: "guest", method: "sendIce", ice: localIce}));
+        function sendSignal(){
+            console.log(remotePeerConnection);
+            ws.send(JSON.stringify({action: "sendGuestSignal",
+                signal:{
+                    description: localDes, ice: localIce
+                }
+            }));
+            console.log(remotePeerConnection);
         }
         createConnection();
     </script>

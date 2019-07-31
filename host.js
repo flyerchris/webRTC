@@ -23,12 +23,14 @@ function newConnectionToGuest(){
     pi++;
     sendChannel = newConnection.createDataChannel('sendDataChannel',null);
     newConnection.onicecandidate = (event)=>{
-        console.log("get local ice candidate");
         if(!newConnection.ice){
             newConnection.ice = [];   
         }
-        newConnection.ice.push(event.candidate);
-        
+        if(event.candidate){
+            newConnection.ice.push(event.candidate);
+        }else{
+            console.log("get all local ice candidate");
+        }
     };
     newConnection.addStream(localStream);
 }
@@ -42,8 +44,8 @@ function gotStream(stream){
 
 function signal(connection){
     connection.createOffer((description)=>{
-        connection.des = description;
-        connection.setLocalDescription(description)
+        connection.setLocalDescription(description);
+        console.log("get local description");
     }, createErrorHandler("signal error"));
     console.log(peerConnection[0]);
 }

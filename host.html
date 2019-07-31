@@ -3,37 +3,37 @@
     <body>
         <button onclick="newConnectionToGuest()">create connection</button>
         <button onclick="signal(peerConnection[pi])">signal</button>
-        <button onclick="sendDes()">send description to ws</button>
-        <button onclick="sendIce()">send ICE candidates to ws</button>
+        <button onclick="sendSignal()">send signal</button>
     </body>
 
     <script src='js/lib/adapter.js'></script>
     <script src='host.js'></script>
     <script>
-        let ws = new WebSocket("ws://localhost:9090");
+        let ws = new WebSocket("wss://l59ktpliwl.execute-api.ap-northeast-1.amazonaws.com/test");
         ws.onopen = function(e){
             console.log("connect to web socket server");
-            ws.send(JSON.stringify({role: "host", method: "setRole"}));
+            ws.send(JSON.stringify({action: "setHost"}));
         }
         ws.onmessage = function(e){
             let obj = JSON.parse(e.data);
             let msg = obj.msg;
             if(msg) console.log(`message from ws server: ${obj.msg}`);
-            if(obj.method == "sendDes"){
-                setRemoteDescription(peerConnection[pi],obj.description);
-                console.log("set remote description");
-            }
-            if(obj.method == "sendIce"){
-                addRemoteIceCandidate(peerConnection[pi],obj.ice);
-                console.log("set remote ice");
+            if(obj.action == "sendSignal"){
+                console.log(obj);
+                console.log(peerConnection[pi]);
+                setRemoteDescription(peerConnection[pi],obj.signal.description);
+                addRemoteIceCandidate(peerConnection[pi],obj.signal.ice);
+                console.log("set remote signal");
+                console.log(peerConnection[pi]);
             }
         }
         getMedia();
-        function sendDes(){
-            ws.send(JSON.stringify({role: "host", method: "sendDes", description: peerConnection[pi].localDescription}));
-        }
-        function sendIce(){
-            ws.send(JSON.stringify({role: "host", method: "sendIce", ice: peerConnection[pi].ice}));
+        function sendSignal(){
+            ws.send(JSON.stringify({action: "sendHostSignal",
+                signal:{
+                    description: peerConnection[pi].localDescription, ice: peerConnection[pi].ice}
+                }
+            ));
         }
     </script>
 </html>
