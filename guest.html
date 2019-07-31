@@ -9,6 +9,7 @@
     <script src='./guest.js'></script>
     <script>
         let ws = new WebSocket("wss://l59ktpliwl.execute-api.ap-northeast-1.amazonaws.com/test");
+        let isConnect = false;
         ws.onopen = function(e){
             console.log("connect to web socket server");
         }
@@ -17,6 +18,8 @@
             let msg = obj.msg;
             if(msg) console.log(`message from ws server: ${obj.msg}`);
             if(obj.action == "sendSignal"){
+                if(isConnect) return;
+                isConnect = true;
                 description = obj.signal.description;
                 ice = obj.signal.ice;
                 console.log(description);
